@@ -1,4 +1,4 @@
-"""budget_notebook URL Configuration
+"""backend URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/3.2/topics/http/urls/
@@ -18,9 +18,9 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('posts/', include('apps.posts.urls')),
+    path('item/', include('apps.item.urls')),
     path('users/', include('apps.users.urls')),
-    path('categories/', include('apps.categories.urls')),
-    path('products/', include('apps.products.urls')),
-    path('carts/', include('apps.carts.urls')),
-    path('orders/', include('apps.orders.urls'))
+    path('cart_item/', include('apps.cart_item.urls')),
+    path('order/', include('apps.order.urls')),
 ]

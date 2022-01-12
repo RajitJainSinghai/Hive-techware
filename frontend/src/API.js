@@ -1,105 +1,125 @@
-import axios from "axios";
-require('dotenv').config()
+import axios from 'axios';
+const LOGIN_USER_KEY = 'HIVE_LOGIN_USER_KEY';
 
-export const LOGIN_USER_KEY = "HIVE_TECHWEAR_LOGIN_USER_KEY";
-const { REACT_APP_ENVIRONMENT, REACT_APP_API_BASE_URL_PROD, REACT_APP_API_BASE_URL_DEV } = process.env;
-let baseURL;
-
-if (REACT_APP_ENVIRONMENT === "PRODUCTION") {
-	baseURL = REACT_APP_API_BASE_URL_PROD;
+var baseURL;
+if (process.env.REACT_APP_ENVIRONMENT && process.env.REACT_APP_ENVIRONMENT === 'PRODUCTION') {
+    baseURL = process.env.REACT_APP_API_BASE_URL;
 } else {
-	baseURL = REACT_APP_API_BASE_URL_DEV;
+    baseURL = 'http://127.0.0.1:8000';
 }
 
 const api = axios.create({
-  baseURL: baseURL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+    baseURL: baseURL,
+    headers: {
+        'Content-Type': 'application/json'
+    }
 });
 
+/**
+ * Add requireToken: true in request config, for API that required Authorization token
+ */
 api.interceptors.request.use(
-  (config) => {
-    if (config.requireToken) {
-      const user = localStorage.getItem(LOGIN_USER_KEY)
-        ? JSON.parse(localStorage.getItem(LOGIN_USER_KEY))
-        : null;
-      config.headers.common["Authorization"] = user.token;
-    }
+    config => {
+        if (config.requireToken && localStorage.getItem(LOGIN_USER_KEY)) {
+            config.headers.common['Authorization'] = JSON.parse(localStorage.getItem(LOGIN_USER_KEY)).token;
+        }
 
-    return config;
-  },
-  (err) => console.error(err)
+        return config;
+    },
+    err => {
+        console.error(err);
+    }
 );
-
 api.interceptors.response.use(
-  (response) => {
-    return response.data;
-  },
-  (error) => {
-    console.log("error.response", error);
-    if (error.response.status === 401) {
-      localStorage.removeItem(LOGIN_USER_KEY);
-    }
+    response => {
+        return response.data;
+    },
+    error => {
+        // if (error.response.status === 401) {
+        // 	localStorage.removeItem(LOGIN_USER_KEY);
+        // }
 
-    return Promise.reject(error);
-  }
+        return Promise.reject(error);
+    }
 );
 
 export default class API {
-  signUp = async (signUpBody) => {
-    const formData = new FormData();
+    signUp = async (username, email, password) => {
+        const formData = new FormData();
+        formData.append('username', username);
+        formData.append('email', email);
+        formData.append('password', password);
+        console.log('password', password);
+        const savedPost = await api
+            .post('/users/signup/', formData)
+            .then(response => {
+                return response;
+            })
+            .catch(error => {
+                throw new Error(error);
+            });
+        return savedPost;
+    };
+    signIn = async (email, password) => {
+        const formData = new FormData();
+        formData.append('email', email);
+        formData.append('password', password);
+        const savedPost = await api
+            .post('/users/signin/', formData)
+            .then(response => {
+                return response;
+            })
+            .catch(error => {
+                throw new Error(error);
+            });
+        return savedPost;
+    };
+    getUsers = async token => {
+        const posts = await api
+            .get('/users/', {
+                data: {},
+                headers: {
+                    Authorization: token
+                }
+            })
+            .then(response => {
+                return response.data;
+            })
+            .catch(error => {
+                throw new Error(error);
+            });
+        return posts;
+    };
 
-    for (const key in signUpBody) {
-      formData.append(key, signUpBody[key]);
-    }
+    getPosts = params => {
+        return api
+            .get('/posts/', { params })
+            .then(response => {
+                return response.data;
+            })
+            .catch(error => {
+                throw new Error(error);
+            });
+    };
+    addPost = postBody => {
+        const formData = new FormData();
 
-    return api.post("/users/signup/", formData);
-  };
+        for (const key in postBody) {
+            formData.append(key, postBody[key]);
+        }
 
-  signIn = async (signInBody) => {
-    const formData = new FormData();
-    for (const key in signInBody) {
-      formData.append(key, signInBody[key]);
-    }
-    return api.post("/users/signin/", formData);
-  };
-
-  // Category
-  getCategories = () => {
-    return api.get("/categories/");
-  };
-
-  // Product
-  getProducts = (query = {}) => {
-    return api.get("/products/", { params: query, requireToken: true });
-  };
-
-  // Cart
-  getCarts = (query = {}) => {
-    return api.get("/carts/", { params: query, requireToken: true });
-  };
-
-  addCart = (addCartBody) => {
-    const formData = new FormData();
-    for (const key in addCartBody) {
-      formData.append(key, addCartBody[key]);
-    }
-    return api.post("/carts/add/", formData, { requireToken: true });
-  };
-
-  updateCart = (updateCartBody, cartId) => {
-    const formData = new FormData();
-    for (const key in updateCartBody) {
-      formData.append(key, updateCartBody[key]);
-    }
-    return api.put(`/carts/update/${cartId}/`, formData, {
-      requireToken: true,
-    });
-  };
-
-  // Checkout
-  checkoutOrder = (checkoutOrderBody) => {
-    return api.post("/orders/add/", checkoutOrderBody, { requireToken: true });
-  };
+        return api
+            .post('/posts/add/', formData)
+            .then(response => {
+                return response.data;
+            })
+            .catch(error => {
+                throw new Error(error);
+            });
+    };
+    deletePost = id => {
+        return api.delete(`/posts/delete/${id}/`).catch(error => {
+            throw new Error(error);
+        });
+    };
 }

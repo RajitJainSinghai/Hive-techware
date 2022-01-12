@@ -1,17 +1,9 @@
-import './App.css';
-
 import React from 'react';
-import { BrowserRouter } from 'react-router-dom';
-
 import Router from './Router';
-
+import './assets/style.css';
 
 function App() {
-	return (
-		<BrowserRouter>
-			<Router />
-		</BrowserRouter>
-	);
+    return <Router />;
 }
 
 export default App;
